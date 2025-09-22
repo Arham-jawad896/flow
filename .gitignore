@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv
+venv/
+env/
+*.sqlite3
+*.db
+*.log
+
+# Backend artifacts
+backend/data/*
+!backend/data/.gitkeep
+backend/logs/*
+!backend/logs/.gitkeep
+backend/database/*.db
+
+# Node/Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/.vercel/
+*.local
+
+# Build/dist
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
