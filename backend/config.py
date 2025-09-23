@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     
     # File Storage
     upload_dir: str = "./data"
-    max_file_size: int = 52428800  # 50MB in bytes
+    max_file_size: int = 5368709120  # 5GB in bytes
     
     # LLM API removed for MVP
     
@@ -26,8 +26,7 @@ class Settings(BaseSettings):
     # CORS Settings - Allow all origins in development
     cors_origins: List[str] = ["*"]
     
-    # No tier limits - everything is free!
-    max_file_size: int = 524288000  # 500MB
+    # File limits
     max_rows: int = 1000000  # 1M rows
     
     # Security

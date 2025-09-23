@@ -261,11 +261,11 @@ class DatasetManager:
             
             # Process based on file type
             if dataset.file_type == "csv":
-                result = preprocessor.preprocess_csv(dataset.file_path, is_premium)
+                result = preprocessor.preprocess_csv(dataset.file_path)
             elif dataset.file_type == "image":
-                result = preprocessor.preprocess_images([dataset.file_path], is_premium)
+                result = preprocessor.preprocess_images([dataset.file_path])
             elif dataset.file_type == "text":
-                result = preprocessor.preprocess_text(dataset.file_path, is_premium)
+                result = preprocessor.preprocess_text(dataset.file_path)
             else:
                 raise ValueError(f"Unsupported file type: {dataset.file_type}")
             

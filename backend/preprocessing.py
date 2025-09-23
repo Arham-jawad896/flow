@@ -30,7 +30,7 @@ class DataPreprocessor:
         self.train_test_split = self.options.get('train_test_split', 0.8)
         self.feature_engineering = self.options.get('feature_engineering', False)
         
-    def preprocess_csv(self, file_path: str, is_premium: bool = False) -> Dict[str, Any]:
+    def preprocess_csv(self, file_path: str) -> Dict[str, Any]:
         """Preprocess CSV data."""
         try:
             # Read CSV file
@@ -45,7 +45,7 @@ class DataPreprocessor:
             # 1. Handle missing values
             missing_before = df.isnull().sum().sum()
             if missing_before > 0:
-                if is_premium and self.missing_value_strategy in ['median', 'mode']:
+                if self.missing_value_strategy in ['median', 'mode']:
                     if self.missing_value_strategy == 'median':
                         numeric_columns = df.select_dtypes(include=[np.number]).columns
                         df[numeric_columns] = df[numeric_columns].fillna(df[numeric_columns].median())
@@ -54,7 +54,7 @@ class DataPreprocessor:
                         for col in categorical_columns:
                             df[col] = df[col].fillna(df[col].mode()[0] if not df[col].mode().empty else 'Unknown')
                 else:
-                    # Free tier: use mean for numeric, mode for categorical
+                    # Use mean for numeric, mode for categorical
                     numeric_columns = df.select_dtypes(include=[np.number]).columns
                     categorical_columns = df.select_dtypes(include=['object']).columns
                     
@@ -67,9 +67,9 @@ class DataPreprocessor:
                 missing_after = df.isnull().sum().sum()
                 preprocessing_log.append(f"Handled {missing_before} missing values, {missing_after} remaining")
             
-            # 2. Handle outliers (Premium only)
+            # 2. Handle outliers
             outliers_removed = 0
-            if is_premium and self.outlier_removal:
+            if self.outlier_removal:
                 numeric_columns = df.select_dtypes(include=[np.number]).columns
                 if len(numeric_columns) > 0:
                     isolation_forest = IsolationForest(contamination=0.1, random_state=42)
@@ -100,22 +100,19 @@ class DataPreprocessor:
             # 4. Scale numerical features
             numeric_columns = df.select_dtypes(include=[np.number]).columns
             if len(numeric_columns) > 0:
-                if is_premium:
-                    if self.scaling_method == 'standard':
-                        scaler = StandardScaler()
-                    elif self.scaling_method == 'robust':
-                        scaler = RobustScaler()
-                    else:  # minmax
-                        scaler = MinMaxScaler()
+                if self.scaling_method == 'standard':
+                    scaler = StandardScaler()
+                elif self.scaling_method == 'robust':
+                    scaler = RobustScaler()
                 else:
-                    # Free tier: always use MinMax scaling
+                    # Default: MinMax scaling
                     scaler = MinMaxScaler()
                 
                 df[numeric_columns] = scaler.fit_transform(df[numeric_columns])
                 preprocessing_log.append(f"Scaled {len(numeric_columns)} numerical columns using {scaler.__class__.__name__}")
             
-            # 5. Feature engineering (Premium only)
-            if is_premium and self.feature_engineering:
+            # 5. Feature engineering
+            if self.feature_engineering:
                 # Add polynomial features for numeric columns
                 from sklearn.preprocessing import PolynomialFeatures
                 numeric_columns = df.select_dtypes(include=[np.number]).columns
@@ -169,7 +166,7 @@ class DataPreprocessor:
                 'preprocessing_log': [f"Error: {str(e)}"]
             }
     
-    def preprocess_images(self, file_paths: list, is_premium: bool = False) -> Dict[str, Any]:
+    def preprocess_images(self, file_paths: list) -> Dict[str, Any]:
         """Preprocess image data."""
         try:
             preprocessing_log = []
@@ -184,16 +181,13 @@ class DataPreprocessor:
                     if img.mode != 'RGB':
                         img = img.convert('RGB')
                     
-                    # Resize to standard size (Premium: customizable, Free: fixed)
-                    if is_premium:
-                        target_size = self.options.get('image_size', (224, 224))
-                    else:
-                        target_size = (224, 224)  # Free tier: fixed size
+                    # Resize to standard size
+                    target_size = self.options.get('image_size', (224, 224))
                     
                     img = img.resize(target_size)
                     
-                    # Data augmentation (Premium only)
-                    if is_premium and self.data_augmentation:
+                    # Data augmentation
+                    if self.data_augmentation:
                         # Add augmentation logic here
                         pass
                     
@@ -224,7 +218,7 @@ class DataPreprocessor:
                 'preprocessing_log': [f"Error: {str(e)}"]
             }
     
-    def preprocess_text(self, file_path: str, is_premium: bool = False) -> Dict[str, Any]:
+    def preprocess_text(self, file_path: str) -> Dict[str, Any]:
         """Preprocess text data."""
         try:
             # Read text file
@@ -249,8 +243,8 @@ class DataPreprocessor:
             
             preprocessing_log.append(f"Tokenized text: {total_words} words, {unique_words} unique")
             
-            # 3. Data augmentation (Premium only)
-            if is_premium and self.data_augmentation:
+            # 3. Data augmentation
+            if self.data_augmentation:
                 # Add text augmentation logic here
                 pass
             
@@ -321,19 +315,13 @@ def get_file_type(file_path: str) -> str:
         return 'csv'
     return 'unknown'
 
-def validate_file_size(file_size: int, is_premium: bool = False) -> bool:
+def validate_file_size(file_size: int) -> bool:
     """Validate file size based on user tier."""
-    if is_premium:
-        return file_size <= settings.max_file_size * 10  # Premium: 500MB
-    else:
-        return file_size <= settings.free_tier_max_file_size  # Free: 50MB
+    return file_size <= settings.max_file_size  # 5GB
 
-def validate_csv_rows(row_count: int, is_premium: bool = False) -> bool:
+def validate_csv_rows(row_count: int) -> bool:
     """Validate CSV row count based on user tier."""
-    if is_premium:
-        return True  # Premium: unlimited
-    else:
-        return row_count <= settings.free_tier_max_rows  # Free: 50k rows
+    return row_count <= settings.max_rows  # 1M rows
 
 class AdvancedDataPreprocessor:
     """Advanced preprocessing class with custom options."""

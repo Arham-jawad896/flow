@@ -31,13 +31,13 @@ class UserTierManager:
     
     def check_file_size_limit(self, file_size: int, user: User) -> Dict[str, Any]:
         """Check if file size is within limits."""
-        max_size = settings.max_file_size  # 500MB for everyone
+        max_size = settings.max_file_size  # 5GB for everyone
         
         return {
             'within_limit': file_size <= max_size,
             'file_size': file_size,
             'max_size': max_size,
-            'tier': 'free'  # Everyone is free now!
+            'tier': 'free'
         }
     
     def check_row_limit(self, row_count: int, user: User) -> Dict[str, Any]:
@@ -48,7 +48,7 @@ class UserTierManager:
             'within_limit': row_count <= max_rows,
             'row_count': row_count,
             'max_rows': max_rows,
-            'tier': 'free'  # Everyone is free now!
+            'tier': 'free'
         }
     
     def check_api_limit(self, user: User) -> Dict[str, Any]:
@@ -58,7 +58,7 @@ class UserTierManager:
         
         usage_stats = self._get_or_create_usage_stats(user.id, current_month, current_year)
         
-        # No limits - everything is free!
+        # No limits
         return {
             'can_call': True,
             'remaining': -1,  # Unlimited
@@ -106,7 +106,7 @@ class UserTierManager:
         total_file_size = sum(size[0] for size in total_size)
         
         return {
-            'tier': 'free',  # Everyone is free now!
+            'tier': 'free',
             'current_month': {
                 'datasets_uploaded': usage_stats.datasets_uploaded,
                 'api_calls_made': usage_stats.api_calls_made,
@@ -116,7 +116,7 @@ class UserTierManager:
                 'datasets': total_datasets,
                 'total_file_size': total_file_size
             },
-            'limits': self._get_tier_limits(user.is_premium)
+            'limits': self._get_tier_limits()
         }
     
     def _get_or_create_usage_stats(self, user_id: int, month: int, year: int) -> UsageStats:
@@ -139,11 +139,11 @@ class UserTierManager:
         
         return usage_stats
     
-    def _get_tier_limits(self, is_premium: bool) -> Dict[str, Any]:
-        """Get limits - everything is free now!"""
+    def _get_tier_limits(self) -> Dict[str, Any]:
+        """Get limits for free tier"""
         return {
             'datasets_per_month': -1,  # Unlimited
-            'max_file_size': settings.max_file_size,  # 500MB
+            'max_file_size': settings.max_file_size,  # 5GB
             'max_rows': settings.max_rows,  # 1M rows
             'api_calls_per_month': -1,  # Unlimited
             'features': [
@@ -155,35 +155,9 @@ class UserTierManager:
                 'data_augmentation',
                 'feature_engineering',
                 'outlier_removal',
-                'advanced_scaling',
-                'model_training',
-                'hyperparameter_tuning'
+                'advanced_scaling'
             ]
         }
-    
-    def upgrade_user_to_premium(self, user: User) -> bool:
-        """Upgrade user to premium tier."""
-        try:
-            user.is_premium = True
-            self.db.commit()
-            logger.info(f"User {user.id} upgraded to premium")
-            return True
-        except Exception as e:
-            logger.error(f"Error upgrading user {user.id} to premium: {str(e)}")
-            self.db.rollback()
-            return False
-    
-    def downgrade_user_to_free(self, user: User) -> bool:
-        """Downgrade user to free tier."""
-        try:
-            user.is_premium = False
-            self.db.commit()
-            logger.info(f"User {user.id} downgraded to free")
-            return True
-        except Exception as e:
-            logger.error(f"Error downgrading user {user.id} to free: {str(e)}")
-            self.db.rollback()
-            return False
 
 def validate_user_limits(user: User, file_size: int, db: Session, row_count: Optional[int] = None) -> Dict[str, Any]:
     """Validate all user limits for a file upload."""
@@ -205,7 +179,7 @@ def validate_user_limits(user: User, file_size: int, db: Session, row_count: Opt
             return {
                 'valid': False,
                 'error': 'row_limit_exceeded',
-                'message': f"Dataset has {row_count} rows, which exceeds the maximum limit of {row_check['max_rows']} rows (1M rows)."
+                'message': f"File size ({file_size} bytes) exceeds the maximum limit of {size_check['max_size']} bytes (5GB)."
             }
     
     return {

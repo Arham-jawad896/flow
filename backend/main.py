@@ -245,19 +245,6 @@ async def get_usage_stats(
     tier_manager = UserTierManager(db)
     return tier_manager.get_usage_summary(current_user)
 
-@app.post("/user/upgrade", response_model=SuccessResponse)
-async def upgrade_to_premium(
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """Upgrade user to premium tier."""
-    tier_manager = UserTierManager(db)
-    success = tier_manager.upgrade_user_to_premium(current_user)
-    if success:
-        return SuccessResponse(message="Successfully upgraded to premium")
-    else:
-        raise HTTPException(status_code=500, detail="Failed to upgrade user")
-
 # API key functionality removed for MVP (library handles access)
 
 # Dashboard endpoint
